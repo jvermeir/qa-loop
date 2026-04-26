@@ -3,7 +3,8 @@ reports/
 __pycache__/
 *.pyc
 .scannerwork/
-sonar-data/
+sonar/
 .venv
 config.toml
 .claude
+log.md

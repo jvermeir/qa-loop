@@ -5,7 +5,8 @@
 #   ./bin/run-analysis.sh /path/to/project
 #   ./bin/run-analysis.sh          # defaults to current directory
 #
-# Reads host_url, token, project_key, and scanner_args from config.toml.
+# Reads host_url, token, and scanner_args from config.toml.
+# Project key defaults to the target directory's basename; override via SONAR_PROJECT_KEY env var.
 # Override token via env: SONAR_TOKEN=xxx ./bin/run-analysis.sh
 
 set -euo pipefail
@@ -38,7 +39,6 @@ else:
 EOF
 }
 
-PROJECT_KEY="$(read_toml sonar.project_key)"
 HOST_URL="$(read_toml sonar.host_url)"
 TOKEN="${SONAR_TOKEN:-$(read_toml sonar.token)}"
 
@@ -59,10 +59,13 @@ if [[ -z "$TOKEN" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Target project directory
+# Target project directory and project key
 # ---------------------------------------------------------------------------
 TARGET_DIR="${1:-$(pwd)}"
 TARGET_DIR="$(cd "$TARGET_DIR" && pwd)"
+# Use the directory basename as the Sonar project key so each project gets its own dashboard entry.
+# Override via SONAR_PROJECT_KEY env var if needed.
+PROJECT_KEY="${SONAR_PROJECT_KEY:-$(basename "$TARGET_DIR")}"
 
 if [[ ! -d "$TARGET_DIR" ]]; then
     echo "ERROR: Directory not found: $TARGET_DIR"
