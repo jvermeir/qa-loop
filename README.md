@@ -105,6 +105,20 @@ python3 bin/checker.py
 ./install/install-cron.sh "0 8 * * *"  # or pass an expression directly (daily at 08:00)
 ```
 
+---
+
+## Claude Code slash commands
+
+The `commands/` directory contains Claude Code slash commands for this project (e.g. `/run-analysis`).
+Symlink them into `~/.claude/commands/` so Claude Code picks them up:
+
+```bash
+./install/install-commands.sh
+```
+
+This creates `~/.claude/commands/<name>.md → <repo>/commands/<name>.md` for every `.md` file in
+`commands/`. Re-run after adding new command files.
+
 ### Log format
 
 Every run appends one line to `log/qa-loop.log`:
@@ -130,8 +144,11 @@ qa-loop/
 │   ├─ stop-sonar.sh       # stop Docker container
 │   ├─ setup-sonar.sh      # first-time admin + project + token setup
 │   └─ run-analysis.sh     # run sonar-scanner in Docker
+├─ commands/
+│   └─ run-analysis.md     # /run-analysis slash command for Claude Code
 ├─ install/
-│   └─ install-cron.sh     # registers bin/checker.py as a cron job
+│   ├─ install-cron.sh     # registers bin/checker.py as a cron job
+│   └─ install-commands.sh # symlinks commands/ into ~/.claude/commands/
 ├─ log/
 │   └─ qa-loop.log         # append-only run history
 ├─ reports/
