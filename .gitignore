@@ -1,0 +1,9 @@
+log/
+reports/
+__pycache__/
+*.pyc
+.scannerwork/
+sonar-data/
+.venv
+config.toml
+.claude
