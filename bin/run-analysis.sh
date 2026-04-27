@@ -89,7 +89,6 @@ DOCKER_ARGS=(
     -v "$TARGET_DIR:/usr/src"
     "$IMAGE"
     -Dsonar.projectKey="$PROJECT_KEY"
-    -Dsonar.sources=.
 )
 
 # Append extra args from config (filter out host/token if duplicated)
