@@ -16,3 +16,9 @@ webhook_url = ""          # Leave empty to disable Slack notifications
 [schedule]
 # For reference only — actual scheduling is managed via crontab / install-cron.sh
 cron_expression = "0 * * * *"
+
+[ollama]
+# Settings for bin/auto-fix.py. Override model/iterations with CLI flags.
+host           = "http://localhost:11434"
+model          = "qwen2.5-coder"   # any model available in your local Ollama instance
+max_iterations = 5
