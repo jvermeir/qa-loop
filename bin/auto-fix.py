@@ -146,15 +146,29 @@ def group_by_file(issues: list[dict], project_dir: Path) -> dict[Path, list[dict
 _SYSTEM_PROMPT = """\
 You are a Java code quality expert. Fix the listed SonarQube issues in the file below.
 
-Rules:
-- Return ONLY the complete fixed Java source file. No explanation, no markdown fences.
+CRITICAL OUTPUT RULES — violating any of these will break the build:
+- Output RAW Java source code ONLY. The very first character must be the first character of \
+the Java file (e.g. a comment, 'package', or 'import'). The very last character must be '}'.
+- Do NOT wrap the output in markdown fences (no ```java or ``` lines).
+- Do NOT add any explanation, preamble, or trailing text.
+- Do NOT remove or comment out existing methods, fields, or classes — even if they have issues.
+- Do NOT shorten the file. The output must contain all the same classes and methods as the input.
 - For issues that require human judgment (security architecture decisions, breaking API \
 changes, intentional design choices that go beyond a mechanical fix), leave the relevant \
 code unchanged and add a comment on that line:
   // TODO [NEEDS HUMAN REVIEW]: <brief reason>
-- Preserve all existing method signatures and functionality.
 - Fix as many issues as possible automatically.\
 """
+
+
+def _strip_markdown_fences(text: str) -> str:
+    """Remove markdown code fences that models sometimes wrap responses in."""
+    lines = text.splitlines()
+    if lines and lines[0].strip().startswith("```"):
+        lines = lines[1:]
+    if lines and lines[-1].strip().startswith("```"):
+        lines = lines[:-1]
+    return "\n".join(lines)
 
 
 def fix_file(
@@ -163,8 +177,8 @@ def fix_file(
     path: Path,
     issues: list[dict],
     project_dir: Path,
-) -> tuple[str, list[dict]]:
-    """Return (fixed_source, list_of_human_review_items)."""
+) -> tuple[str | None, list[dict]]:
+    """Return (fixed_source, list_of_human_review_items), or (None, []) if unsafe."""
     rel = path.relative_to(project_dir)
     content = path.read_text()
 
@@ -189,7 +203,14 @@ def fix_file(
             {"role": "user", "content": user_msg},
         ],
     )
-    fixed = response.message.content.strip()
+    fixed = _strip_markdown_fences(response.message.content.strip())
+
+    # Reject responses that lost more than 30% of the original content — the model
+    # probably deleted or commented out code instead of fixing it.
+    if len(fixed) < len(content) * 0.7:
+        print(f"    WARNING: model response for {rel} is suspiciously short "
+              f"({len(fixed)} vs {len(content)} chars) — skipping to avoid data loss.")
+        return None, []
 
     todos = []
     for lineno, line_text in enumerate(fixed.splitlines(), 1):
@@ -473,6 +494,8 @@ def main() -> None:
             rel = file_path.relative_to(project_dir)
             print(f"  Fixing {rel} ({len(file_issues)} issue(s))...")
             fixed_content, todos = fix_file(client, model, file_path, file_issues, project_dir)
+            if fixed_content is None:
+                continue
             file_path.write_text(fixed_content)
             changed_paths.add(file_path)
 
