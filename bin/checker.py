@@ -221,7 +221,7 @@ def main() -> None:
     try:
         exit_code, output = run_analysis(project_dir)
     except FileNotFoundError:
-        msg = "sonar/run-analysis.sh not found"
+        msg = "bin/run-analysis.sh not found"
         print(f"ERROR: {msg}", file=sys.stderr)
         log_run(ts, "ERROR", None, None, None, False, error_msg=msg)
         sys.exit(1)
